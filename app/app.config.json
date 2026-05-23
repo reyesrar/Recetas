@@ -1,0 +1,32 @@
+export default {
+  expo: {
+    name: "recetas",
+    slug: "recetas",
+    version: "1.0.0",
+    orientation: "portrait",
+    icon: "./assets/images/icon.png",
+    scheme: "recetas",
+    userInterfaceStyle: "automatic",
+    splash: {
+      image: "./assets/images/splash.png",
+      resizeMode: "contain",
+      backgroundColor: "#ffffff"
+    },
+    android: {
+      adaptiveIcon: {
+        foregroundImage: "./assets/images/adaptive-icon.png",
+        backgroundColor: "#ffffff"
+      },
+      package: "com.recetas.app"
+    },
+    plugins: [
+      "expo-router"
+    ],
+    experiments: {
+      typedRoutes: true
+    },
+    extra: {
+      apiUrl: process.env.API_URL
+    }
+  }
+};
