@@ -17,7 +17,7 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Recetario</Text>
+      <Text style={styles.title}>Recipe Book</Text>
       <TextInput
         style={styles.input}
         placeholder="user"
