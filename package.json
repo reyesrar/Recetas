@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android"
+    "android": "expo start --android",
+    "reset": "expo start --clear"
   },
   "dependencies": {
     "@react-navigation/native": "^7.1.33",
