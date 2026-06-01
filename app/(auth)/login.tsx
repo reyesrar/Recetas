@@ -1,15 +1,15 @@
 import { Link, router } from "expo-router";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -80,7 +80,7 @@ export default function LoginScreen() {
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>¿No tienes cuenta? </Text>
-          <Link href="/(auth)/register" asChild>
+          <Link href="../register" asChild>
             <TouchableOpacity disabled={loading}>
               <Text style={styles.link}>Regístrate</Text>
             </TouchableOpacity>
