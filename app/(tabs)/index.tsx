@@ -1,38 +1,66 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  View
+} from "react-native";
+import { useAuth } from "../contexts/AuthContext";
 
-export default function TabHomeScreen() {
+export default function RecipesScreen() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
+
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.welcome}>Welcome!</Text>
-        <Text style={styles.subtitle}>What we cooking today?</Text>
+        <Text style={styles.title}>Mis Recetas</Text>
       </View>
 
-      <View style={styles.card}>
-        <View style={styles.imagePlaceholder} />
-        <View style={styles.info}>
-          <Text style={styles.recipeTitle}>Something</Text>
-          <Text style={styles.recipeDesc}>Something Something</Text>
-        </View>
+      <View style={styles.content}>
+        <Text style={styles.welcomeText}>Welcome, {user?.name}!</Text>
+        <Text style={styles.description}>What we cooking today?</Text>
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FDF8F5" },
-  header: { padding: 25, paddingTop: 60 },
-  welcome: { fontSize: 28, fontWeight: "bold", color: "#4A3728" },
-  subtitle: { fontSize: 16, color: "#8D6E63" },
-  card: {
-    margin: 20,
-    backgroundColor: "#FFF",
-    borderRadius: 15,
-    overflow: "hidden",
-    elevation: 2,
+  container: {
+    flex: 1,
+    backgroundColor: "#f5f5f5",
   },
-  imagePlaceholder: { height: 150, backgroundColor: "#E6D5C3" },
-  info: { padding: 15 },
-  recipeTitle: { fontSize: 18, fontWeight: "bold", color: "#4A3728" },
-  recipeDesc: { color: "#A9927D", marginTop: 5 },
+  header: {
+    backgroundColor: "#007AFF",
+    paddingTop: 40,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  content: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  welcomeText: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 10,
+  },
+  description: {
+    fontSize: 16,
+    color: "#666",
+  },
 });

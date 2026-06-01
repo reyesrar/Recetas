@@ -1,31 +1,37 @@
-import { FontAwesome } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 
-export default function TabLayout() {
+export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: "#4A3728", // Active
-        tabBarInactiveTintColor: "#C4A484", // Inactive
-        tabBarStyle: { backgroundColor: "#FDF8F5" },
         headerShown: false,
+        tabBarActiveTintColor: "#007AFF",
+        tabBarInactiveTintColor: "#999",
+        tabBarStyle: {
+          backgroundColor: "#fff",
+          borderTopColor: "#ddd",
+          borderTopWidth: 1,
+          paddingBottom: 5,
+          paddingTop: 5,
+        },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: "Recetas",
           tabBarIcon: ({ color }) => (
-            <FontAwesome name="home" size={24} color={color} />
+            <MaterialCommunityIcons name="chef-hat" size={24} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="two"
+        name="profile"
         options={{
-          title: "Explore",
+          title: "Perfil",
           tabBarIcon: ({ color }) => (
-            <FontAwesome name="search" size={24} color={color} />
+            <MaterialCommunityIcons name="account" size={24} color={color} />
           ),
         }}
       />
