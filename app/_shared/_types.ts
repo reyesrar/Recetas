@@ -21,6 +21,15 @@ export interface Recipe {
   updatedAt: Date;
 }
 
+export interface Group {
+  _id: string;
+  userId: string;
+  name: string;
+  description: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface AuthResponse {
   success: boolean;
   message: string;
