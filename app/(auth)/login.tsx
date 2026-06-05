@@ -11,7 +11,16 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../../_shared/_contexts";
+import type { LoginCredentials } from "../../_shared/_types";
+import { strings } from "../../_shared/strings";
+import {
+  borderRadius,
+  colors,
+  fontSize,
+  fontWeight,
+  spacing,
+} from "../../_shared/theme";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -19,20 +28,25 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
 
-  const handleLogin = async () => {
+  const handleLogin = async (): Promise<void> => {
     if (!email || !password) {
-      Alert.alert("Error", "Por favor completa todos los campos");
+      Alert.alert(strings.alerts.error, strings.alerts.fillAllFields);
       return;
     }
 
+    const credentials: LoginCredentials = {
+      email,
+      password,
+    };
+
     setLoading(true);
-    const result = await signIn({ email, password });
+    const result = await signIn(credentials);
     setLoading(false);
 
     if (result.success) {
-      router.replace("/(tabs)");
+      router.replace("/(tabs)" as any);
     } else {
-      Alert.alert("Error", result.message);
+      Alert.alert(strings.alerts.error, result.message);
     }
   };
 
@@ -42,47 +56,49 @@ export default function LoginScreen() {
       style={styles.container}
     >
       <View style={styles.content}>
-        <Text style={styles.title}>Recetas</Text>
-        <Text style={styles.subtitle}>Inicia Sesión</Text>
+        <Text style={styles.title}>{strings.auth.login.title}</Text>
+        <Text style={styles.subtitle}>{strings.auth.login.subtitle}</Text>
 
         <TextInput
           style={styles.input}
-          placeholder="Email"
+          placeholder={strings.auth.login.email}
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
           autoComplete="email"
           editable={!loading}
+          placeholderTextColor={colors.gray}
         />
 
         <TextInput
           style={styles.input}
-          placeholder="Contraseña"
+          placeholder={strings.auth.login.password}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
           autoComplete="password"
           editable={!loading}
+          placeholderTextColor={colors.gray}
         />
 
         <TouchableOpacity
-          style={styles.button}
+          style={[styles.button, loading && styles.buttonDisabled]}
           onPress={handleLogin}
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.white} />
           ) : (
-            <Text style={styles.buttonText}>Iniciar Sesión</Text>
+            <Text style={styles.buttonText}>{strings.auth.login.signIn}</Text>
           )}
         </TouchableOpacity>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>¿No tienes cuenta? </Text>
+          <Text style={styles.footerText}>{strings.auth.login.noAccount} </Text>
           <Link href="../register" asChild>
             <TouchableOpacity disabled={loading}>
-              <Text style={styles.link}>Regístrate</Text>
+              <Text style={styles.link}>{strings.auth.login.signUp}</Text>
             </TouchableOpacity>
           </Link>
         </View>
@@ -94,59 +110,64 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: colors.white,
   },
   content: {
     flex: 1,
     justifyContent: "center",
-    padding: 20,
+    padding: spacing.md,
   },
   title: {
-    fontSize: 36,
-    fontWeight: "bold",
-    color: "#333",
+    fontSize: fontSize.xxxl,
+    fontWeight: fontWeight.bold,
+    color: colors.primary,
     textAlign: "center",
-    marginBottom: 10,
+    marginBottom: spacing.sm,
   },
   subtitle: {
-    fontSize: 18,
-    color: "#666",
+    fontSize: fontSize.lg,
+    color: colors.textSecondary,
     textAlign: "center",
-    marginBottom: 40,
+    marginBottom: spacing.xl,
   },
   input: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 15,
-    fontSize: 16,
+    backgroundColor: colors.lightGray,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.md,
+    fontSize: fontSize.base,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: colors.gray,
+    color: colors.textPrimary,
   },
   button: {
-    backgroundColor: "#007AFF",
-    borderRadius: 8,
-    padding: 15,
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.md,
     alignItems: "center",
-    marginTop: 10,
+    marginTop: spacing.md,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
+    color: colors.white,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
   },
   footer: {
     flexDirection: "row",
     justifyContent: "center",
-    marginTop: 20,
+    marginTop: spacing.lg,
   },
   footerText: {
-    color: "#666",
-    fontSize: 14,
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
   },
   link: {
-    color: "#007AFF",
-    fontSize: 14,
-    fontWeight: "600",
+    color: colors.primary,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
   },
 });

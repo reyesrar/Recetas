@@ -1,12 +1,21 @@
 import { router } from "expo-router";
 import {
     ActivityIndicator,
+    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
 } from "react-native";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../../_shared/_contexts";
+import { strings } from "../../_shared/strings";
+import {
+    borderRadius,
+    colors,
+    fontSize,
+    fontWeight,
+    spacing,
+} from "../../_shared/theme";
 
 export default function ProfileScreen() {
   const { user, loading, signOut } = useAuth();
@@ -14,7 +23,7 @@ export default function ProfileScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -25,82 +34,101 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>My Profile</Text>
+        <Text style={styles.headerTitle}>{strings.tabs.profile}</Text>
       </View>
 
       <View style={styles.content}>
         <View style={styles.userCard}>
-          <Text style={styles.label}>Name:</Text>
-          <Text style={styles.value}>{user?.name}</Text>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>{strings.profile.name}</Text>
+            <Text style={styles.value}>{user?.name}</Text>
+          </View>
 
-          <Text style={styles.label}>Email:</Text>
-          <Text style={styles.value}>{user?.email}</Text>
+          <View style={styles.divider} />
 
-          <Text style={styles.label}>Member since:</Text>
-          <Text style={styles.value}>
-            {user?.createdAt
-              ? new Date(user.createdAt).toLocaleDateString()
-              : "---"}
-          </Text>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>{strings.profile.email}</Text>
+            <Text style={styles.value}>{user?.email}</Text>
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>{strings.profile.memberSince}</Text>
+            <Text style={styles.value}>
+              {user?.createdAt
+                ? new Date(user.createdAt).toLocaleDateString()
+                : "---"}
+            </Text>
+          </View>
         </View>
 
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Logout</Text>
+          <Text style={styles.logoutText}>{strings.profile.logout}</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: colors.white,
   },
   header: {
-    backgroundColor: "#007AFF",
-    paddingTop: 40,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
+    backgroundColor: colors.primary,
+    paddingTop: spacing.xxl,
+    paddingBottom: spacing.lg,
+    paddingHorizontal: spacing.md,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#fff",
+  headerTitle: {
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.bold,
+    color: colors.white,
   },
   content: {
-    flex: 1,
-    padding: 20,
+    padding: spacing.md,
   },
   userCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 30,
+    backgroundColor: colors.lightGray,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.xl,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.primary,
+  },
+  infoRow: {
+    marginVertical: spacing.md,
   },
   label: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#999",
-    marginTop: 15,
-    marginBottom: 5,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
   },
   value: {
-    fontSize: 16,
-    color: "#333",
-    fontWeight: "500",
+    fontSize: fontSize.base,
+    color: colors.textPrimary,
+    fontWeight: fontWeight.medium,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.gray,
+    marginVertical: spacing.md,
   },
   logoutButton: {
-    backgroundColor: "#ff3b30",
-    borderRadius: 8,
-    paddingVertical: 15,
+    backgroundColor: colors.error,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.md,
     alignItems: "center",
+    marginBottom: spacing.xl,
   },
   logoutText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
+    color: colors.white,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
   },
 });

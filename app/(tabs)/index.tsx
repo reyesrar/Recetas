@@ -4,7 +4,14 @@ import {
   Text,
   View
 } from "react-native";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../../_shared/_contexts";
+import { strings } from "../../_shared/strings";
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  spacing
+} from "../../_shared/theme";
 
 export default function RecipesScreen() {
   const { user, loading } = useAuth();
@@ -12,7 +19,7 @@ export default function RecipesScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -20,12 +27,14 @@ export default function RecipesScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Mis Recetas</Text>
+        <Text style={styles.headerTitle}>{strings.tabs.recipes}</Text>
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.welcomeText}>Welcome, {user?.name}!</Text>
-        <Text style={styles.description}>What we cooking today?</Text>
+        <Text style={styles.welcomeText}>
+          {strings.recipes.welcome.replace("{name}", user?.name || "User")}
+        </Text>
+        <Text style={styles.description}>{strings.recipes.comingSoon}</Text>
       </View>
     </View>
   );
@@ -34,33 +43,35 @@ export default function RecipesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: colors.white,
   },
   header: {
-    backgroundColor: "#007AFF",
-    paddingTop: 40,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
+    backgroundColor: colors.primary,
+    paddingTop: spacing.xxl,
+    paddingBottom: spacing.lg,
+    paddingHorizontal: spacing.md,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#fff",
+  headerTitle: {
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.bold,
+    color: colors.white,
   },
   content: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.md,
   },
   welcomeText: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 10,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
+    textAlign: "center",
   },
   description: {
-    fontSize: 16,
-    color: "#666",
+    fontSize: fontSize.base,
+    color: colors.textSecondary,
+    textAlign: "center",
   },
 });

@@ -2,13 +2,14 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs, router } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../../_shared/_contexts";
+import { strings } from "../../_shared/strings";
+import { colors } from "../../_shared/theme";
 
 export default function TabsLayout() {
   const { user, loading } = useAuth();
 
   useEffect(() => {
-    // No user and finished loading, go to login
     if (!loading && !user) {
       router.replace("/(auth)/login" as any);
     }
@@ -16,13 +17,19 @@ export default function TabsLayout() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: colors.white,
+        }}
+      >
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
-  // No user, no render tabs
   if (!user) {
     return null;
   }
@@ -31,11 +38,11 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#007AFF",
-        tabBarInactiveTintColor: "#999",
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.gray,
         tabBarStyle: {
-          backgroundColor: "#fff",
-          borderTopColor: "#ddd",
+          backgroundColor: colors.white,
+          borderTopColor: colors.gray,
           borderTopWidth: 1,
           paddingBottom: 5,
           paddingTop: 5,
@@ -45,7 +52,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Recetas",
+          title: strings.tabs.recipes,
           tabBarIcon: ({ color }) => (
             <MaterialCommunityIcons name="chef-hat" size={24} color={color} />
           ),
@@ -54,7 +61,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Perfil",
+          title: strings.tabs.profile,
           tabBarIcon: ({ color }) => (
             <MaterialCommunityIcons name="account" size={24} color={color} />
           ),
