@@ -6,6 +6,21 @@ export interface User {
   updatedAt: Date;
 }
 
+export interface Recipe {
+  _id: string;
+  userId: string | { _id: string; name: string };
+  title: string;
+  description: string;
+  ingredients: string[];
+  steps: string[];
+  servings: number;
+  cookingTime: number;
+  difficulty: "easy" | "medium" | "hard";
+  groups: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface AuthResponse {
   success: boolean;
   message: string;
