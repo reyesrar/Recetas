@@ -1,26 +1,25 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useAuth } from "../_shared/_contexts";
 import { strings } from "../_shared/strings";
 import {
-    borderRadius,
-    colors,
-    fontSize,
-    fontWeight,
-    spacing,
+  borderRadius,
+  colors,
+  fontSize,
+  fontWeight,
+  spacing,
 } from "../_shared/theme";
+import apiClient from "../services/api";
 
 export default function ProfileScreen() {
   const { user, loading, signOut } = useAuth();
@@ -47,12 +46,10 @@ export default function ProfileScreen() {
 
     setUpdating(true);
     try {
-      const token = await AsyncStorage.getItem("token");
-      const response = await axios.put(
-        "http://10.0.2.2:5000/api/users/profile",
-        { name: editName.trim(), email: editEmail.trim() },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      const response = await apiClient.put("/users/profile", {
+        name: editName.trim(),
+        email: editEmail.trim(),
+      });
 
       if (response.data.success) {
         Alert.alert("Success", "Profile updated");
@@ -76,14 +73,9 @@ export default function ProfileScreen() {
 
     setUpdating(true);
     try {
-      const token = await AsyncStorage.getItem("token");
-      const response = await axios.delete(
-        "http://10.0.2.2:5000/api/users/account",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          data: { password: deletePassword },
-        },
-      );
+      const response = await apiClient.delete("/users/account", {
+        data: { password: deletePassword },
+      });
 
       if (response.data.success) {
         await signOut();
@@ -252,10 +244,7 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.white,
-  },
+  container: { flex: 1, backgroundColor: colors.white },
   header: {
     backgroundColor: colors.primary,
     paddingTop: spacing.xxl,
@@ -267,9 +256,7 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.bold,
     color: colors.white,
   },
-  content: {
-    padding: spacing.md,
-  },
+  content: { padding: spacing.md },
   userCard: {
     backgroundColor: colors.lightGray,
     borderRadius: borderRadius.lg,
@@ -284,9 +271,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     marginBottom: spacing.xl,
   },
-  infoRow: {
-    marginVertical: spacing.md,
-  },
+  infoRow: { marginVertical: spacing.md },
   label: {
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
@@ -314,10 +299,7 @@ const styles = StyleSheet.create({
     borderColor: colors.gray,
     color: colors.textPrimary,
   },
-  buttonRow: {
-    flexDirection: "row",
-    gap: spacing.md,
-  },
+  buttonRow: { flexDirection: "row", gap: spacing.md },
   smallButton: {
     flex: 1,
     borderRadius: borderRadius.md,

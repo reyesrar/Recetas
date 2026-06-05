@@ -1,5 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
 import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
@@ -21,8 +19,7 @@ import {
     fontWeight,
     spacing,
 } from "../_shared/theme";
-
-const API_URL = "http://10.0.2.2:5000/api";
+import apiClient from "../services/api";
 
 export default function GroupsScreen() {
   const { user } = useAuth();
@@ -30,10 +27,7 @@ export default function GroupsScreen() {
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-  });
+  const [formData, setFormData] = useState({ name: "", description: "" });
 
   useEffect(() => {
     fetchGroups();
@@ -42,10 +36,7 @@ export default function GroupsScreen() {
   const fetchGroups = async () => {
     try {
       setLoading(true);
-      const token = await AsyncStorage.getItem("token");
-      const response = await axios.get(`${API_URL}/groups`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await apiClient.get("/groups");
       setGroups(
         response.data.data.sort((a: Group, b: Group) =>
           a.name.localeCompare(b.name),
@@ -65,22 +56,15 @@ export default function GroupsScreen() {
     }
 
     try {
-      const token = await AsyncStorage.getItem("token");
       const data = {
         name: formData.name.trim(),
         description: formData.description.trim(),
       };
-
       if (editingGroup) {
-        await axios.put(`${API_URL}/groups/${editingGroup._id}`, data, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await apiClient.put(`/groups/${editingGroup._id}`, data);
       } else {
-        await axios.post(`${API_URL}/groups`, data, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await apiClient.post("/groups", data);
       }
-
       resetForm();
       fetchGroups();
       Alert.alert("Success", editingGroup ? "Group updated" : "Group created");
@@ -92,7 +76,7 @@ export default function GroupsScreen() {
     }
   };
 
-  const handleDeleteGroup = async (id: string, name: string) => {
+  const handleDeleteGroup = async (id: string) => {
     Alert.alert(
       "Delete Group",
       "This will delete your recipes in this group. Continue?",
@@ -102,10 +86,7 @@ export default function GroupsScreen() {
           text: "Delete",
           onPress: async () => {
             try {
-              const token = await AsyncStorage.getItem("token");
-              await axios.delete(`${API_URL}/groups/${id}`, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
+              await apiClient.delete(`/groups/${id}`);
               fetchGroups();
               Alert.alert("Success", "Group deleted");
             } catch (error) {
@@ -125,10 +106,7 @@ export default function GroupsScreen() {
 
   const openEditModal = (group: Group) => {
     setEditingGroup(group);
-    setFormData({
-      name: group.name,
-      description: group.description,
-    });
+    setFormData({ name: group.name, description: group.description });
     setModalVisible(true);
   };
 
@@ -167,7 +145,7 @@ export default function GroupsScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.actionBtn, styles.deleteBtn]}
-                  onPress={() => handleDeleteGroup(item._id, item.name)}
+                  onPress={() => handleDeleteGroup(item._id)}
                 >
                   <Text style={styles.actionBtnText}>Delete</Text>
                 </TouchableOpacity>
@@ -194,14 +172,12 @@ export default function GroupsScreen() {
             <Text style={styles.modalTitle}>
               {editingGroup ? "Edit Group" : "New Group"}
             </Text>
-
             <TextInput
               style={styles.input}
               placeholder="Group name"
               value={formData.name}
               onChangeText={(text) => setFormData({ ...formData, name: text })}
             />
-
             <TextInput
               style={[styles.input, styles.textarea]}
               placeholder="Description"
@@ -211,7 +187,6 @@ export default function GroupsScreen() {
               }
               multiline
             />
-
             <View style={styles.buttonRow}>
               <TouchableOpacity
                 style={[styles.button, styles.saveBtn]}
@@ -234,10 +209,7 @@ export default function GroupsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.white,
-  },
+  container: { flex: 1, backgroundColor: colors.white },
   header: {
     backgroundColor: colors.primary,
     paddingTop: spacing.xxl,
@@ -249,18 +221,9 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.bold,
     color: colors.white,
   },
-  centerContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  emptyText: {
-    fontSize: fontSize.base,
-    color: colors.textSecondary,
-  },
-  listContent: {
-    padding: spacing.md,
-  },
+  centerContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  emptyText: { fontSize: fontSize.base, color: colors.textSecondary },
+  listContent: { padding: spacing.md },
   groupCard: {
     backgroundColor: colors.lightGray,
     borderRadius: borderRadius.lg,
@@ -278,10 +241,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: spacing.md,
   },
-  actions: {
-    flexDirection: "row",
-    gap: spacing.md,
-  },
+  actions: { flexDirection: "row", gap: spacing.md },
   actionBtn: {
     flex: 1,
     backgroundColor: colors.primary,
@@ -289,9 +249,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     alignItems: "center",
   },
-  deleteBtn: {
-    backgroundColor: colors.error,
-  },
+  deleteBtn: { backgroundColor: colors.error },
   actionBtnText: {
     color: colors.white,
     fontSize: fontSize.xs,
@@ -342,26 +300,16 @@ const styles = StyleSheet.create({
     borderColor: colors.gray,
     color: colors.textPrimary,
   },
-  textarea: {
-    height: 80,
-    textAlignVertical: "top",
-  },
-  buttonRow: {
-    flexDirection: "row",
-    gap: spacing.md,
-  },
+  textarea: { height: 80, textAlignVertical: "top" },
+  buttonRow: { flexDirection: "row", gap: spacing.md },
   button: {
     flex: 1,
     paddingVertical: spacing.md,
     borderRadius: borderRadius.md,
     alignItems: "center",
   },
-  saveBtn: {
-    backgroundColor: colors.primary,
-  },
-  cancelBtn: {
-    backgroundColor: colors.gray,
-  },
+  saveBtn: { backgroundColor: colors.primary },
+  cancelBtn: { backgroundColor: colors.gray },
   buttonText: {
     color: colors.white,
     fontSize: fontSize.base,

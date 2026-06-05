@@ -1,11 +1,10 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
   Modal,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -13,7 +12,7 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "../_shared/_contexts";
-import type { Recipe } from "../_shared/_types";
+import type { Group, Recipe } from "../_shared/_types";
 import { strings } from "../_shared/strings";
 import {
   borderRadius,
@@ -22,16 +21,20 @@ import {
   fontWeight,
   spacing,
 } from "../_shared/theme";
-
-const API_URL = "http://10.0.2.2:5000/api";
+import apiClient from "../services/api";
 
 export default function RecipesScreen() {
   const { user } = useAuth();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewType, setViewType] = useState<"my" | "all">("my");
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [groupsModalVisible, setGroupsModalVisible] = useState(false);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
+  const [selectedRecipeForGroups, setSelectedRecipeForGroups] =
+    useState<Recipe | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -44,16 +47,17 @@ export default function RecipesScreen() {
 
   useEffect(() => {
     fetchRecipes();
-  }, [viewType]);
+    fetchGroups();
+  }, [viewType, selectedGroup]);
 
   const fetchRecipes = async () => {
     try {
       setLoading(true);
-      const token = await AsyncStorage.getItem("token");
-      const endpoint = viewType === "my" ? "/my-recipes" : "/all";
-      const response = await axios.get(`${API_URL}/recipes${endpoint}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      let endpoint = viewType === "my" ? "/my-recipes" : "/all";
+      if (selectedGroup) {
+        endpoint = `/group/${selectedGroup}`;
+      }
+      const response = await apiClient.get(`/recipes${endpoint}`);
       setRecipes(
         response.data.data.sort((a: Recipe, b: Recipe) =>
           a.title.localeCompare(b.title),
@@ -63,6 +67,15 @@ export default function RecipesScreen() {
       Alert.alert("Error", "Failed to load recipes");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchGroups = async () => {
+    try {
+      const response = await apiClient.get("/groups");
+      setGroups(response.data.data);
+    } catch (error) {
+      console.error("Error fetching groups");
     }
   };
 
@@ -77,7 +90,6 @@ export default function RecipesScreen() {
     }
 
     try {
-      const token = await AsyncStorage.getItem("token");
       const data = {
         title: formData.title.trim(),
         description: formData.description.trim(),
@@ -89,13 +101,9 @@ export default function RecipesScreen() {
       };
 
       if (editingRecipe) {
-        await axios.put(`${API_URL}/recipes/${editingRecipe._id}`, data, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await apiClient.put(`/recipes/${editingRecipe._id}`, data);
       } else {
-        await axios.post(`${API_URL}/recipes`, data, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await apiClient.post("/recipes", data);
       }
 
       resetForm();
@@ -119,10 +127,7 @@ export default function RecipesScreen() {
         text: "Delete",
         onPress: async () => {
           try {
-            const token = await AsyncStorage.getItem("token");
-            await axios.delete(`${API_URL}/recipes/${id}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
+            await apiClient.delete(`/recipes/${id}`);
             fetchRecipes();
           } catch (error) {
             Alert.alert("Error", "Failed to delete recipe");
@@ -130,6 +135,33 @@ export default function RecipesScreen() {
         },
       },
     ]);
+  };
+
+  const handleToggleGroup = async (groupId: string) => {
+    if (!selectedRecipeForGroups) return;
+
+    try {
+      const isInGroup = selectedRecipeForGroups.groups.includes(groupId);
+
+      if (isInGroup) {
+        await apiClient.post("/recipes/group/remove", {
+          recipeId: selectedRecipeForGroups._id,
+          groupId,
+        });
+      } else {
+        await apiClient.post("/recipes/group/add", {
+          recipeId: selectedRecipeForGroups._id,
+          groupId,
+        });
+      }
+
+      fetchRecipes();
+    } catch (error: any) {
+      Alert.alert(
+        "Error",
+        error.response?.data?.message || "Failed to update groups",
+      );
+    }
   };
 
   const resetForm = () => {
@@ -168,26 +200,85 @@ export default function RecipesScreen() {
 
       <View style={styles.tabBar}>
         <TouchableOpacity
-          style={[styles.tab, viewType === "my" && styles.tabActive]}
-          onPress={() => setViewType("my")}
+          style={[
+            styles.tab,
+            viewType === "my" && !selectedGroup && styles.tabActive,
+          ]}
+          onPress={() => {
+            setViewType("my");
+            setSelectedGroup(null);
+          }}
         >
           <Text
-            style={[styles.tabText, viewType === "my" && styles.tabTextActive]}
+            style={[
+              styles.tabText,
+              viewType === "my" && !selectedGroup && styles.tabTextActive,
+            ]}
           >
-            My Recipes
+            My
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, viewType === "all" && styles.tabActive]}
-          onPress={() => setViewType("all")}
+          style={[
+            styles.tab,
+            viewType === "all" && !selectedGroup && styles.tabActive,
+          ]}
+          onPress={() => {
+            setViewType("all");
+            setSelectedGroup(null);
+          }}
         >
           <Text
-            style={[styles.tabText, viewType === "all" && styles.tabTextActive]}
+            style={[
+              styles.tabText,
+              viewType === "all" && !selectedGroup && styles.tabTextActive,
+            ]}
           >
-            All Recipes
+            All
           </Text>
         </TouchableOpacity>
       </View>
+
+      {viewType === "my" && groups.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.groupsScroll}
+        >
+          <TouchableOpacity
+            style={[styles.groupChip, !selectedGroup && styles.groupChipActive]}
+            onPress={() => setSelectedGroup(null)}
+          >
+            <Text
+              style={[
+                styles.groupChipText,
+                !selectedGroup && styles.groupChipTextActive,
+              ]}
+            >
+              All
+            </Text>
+          </TouchableOpacity>
+          {groups.map((group) => (
+            <TouchableOpacity
+              key={group._id}
+              style={[
+                styles.groupChip,
+                selectedGroup === group._id && styles.groupChipActive,
+              ]}
+              onPress={() => setSelectedGroup(group._id)}
+            >
+              <Text
+                style={[
+                  styles.groupChipText,
+                  selectedGroup === group._id && styles.groupChipTextActive,
+                ]}
+              >
+                {group.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
 
       {loading ? (
         <View style={styles.centerContainer}>
@@ -206,26 +297,47 @@ export default function RecipesScreen() {
               <View>
                 <Text style={styles.recipeTitle}>{item.title}</Text>
                 <Text style={styles.recipeMeta}>
-                  {item.cookingTime}min • {item.difficulty} • {item.servings}{" "}
-                  servings
+                  {item.cookingTime}min • {item.difficulty} • {item.servings}s
                 </Text>
                 {item.description && (
                   <Text style={styles.recipeDesc}>{item.description}</Text>
+                )}
+                {item.groups.length > 0 && (
+                  <View style={styles.groupBadges}>
+                    {item.groups.map((g: any) => (
+                      <Text key={g._id || g} style={styles.groupBadge}>
+                        {typeof g === "string" ? g : g.name}
+                      </Text>
+                    ))}
+                  </View>
                 )}
               </View>
               <View style={styles.actions}>
                 <TouchableOpacity
                   style={styles.actionBtn}
-                  onPress={() => openEditModal(item)}
+                  onPress={() => {
+                    setSelectedRecipeForGroups(item);
+                    setGroupsModalVisible(true);
+                  }}
                 >
-                  <Text style={styles.actionBtnText}>Edit</Text>
+                  <Text style={styles.actionBtnText}>Groups</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionBtn, styles.deleteBtn]}
-                  onPress={() => handleDeleteRecipe(item._id)}
-                >
-                  <Text style={styles.actionBtnText}>Delete</Text>
-                </TouchableOpacity>
+                {viewType === "my" && (
+                  <>
+                    <TouchableOpacity
+                      style={styles.actionBtn}
+                      onPress={() => openEditModal(item)}
+                    >
+                      <Text style={styles.actionBtnText}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.actionBtn, styles.deleteBtn]}
+                      onPress={() => handleDeleteRecipe(item._id)}
+                    >
+                      <Text style={styles.actionBtnText}>Delete</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
               </View>
             </View>
           )}
@@ -233,7 +345,7 @@ export default function RecipesScreen() {
         />
       )}
 
-      {viewType === "my" && (
+      {viewType === "my" && !selectedGroup && (
         <TouchableOpacity
           style={styles.fab}
           onPress={() => {
@@ -251,62 +363,62 @@ export default function RecipesScreen() {
             <Text style={styles.modalTitle}>
               {editingRecipe ? "Edit Recipe" : "New Recipe"}
             </Text>
-
-            <TextInput
-              style={styles.input}
-              placeholder="Title"
-              value={formData.title}
-              onChangeText={(text) => setFormData({ ...formData, title: text })}
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Description"
-              value={formData.description}
-              onChangeText={(text) =>
-                setFormData({ ...formData, description: text })
-              }
-            />
-
-            <TextInput
-              style={[styles.input, styles.textarea]}
-              placeholder="Ingredients (one per line)"
-              value={formData.ingredients}
-              onChangeText={(text) =>
-                setFormData({ ...formData, ingredients: text })
-              }
-              multiline
-            />
-
-            <TextInput
-              style={[styles.input, styles.textarea]}
-              placeholder="Steps (one per line)"
-              value={formData.steps}
-              onChangeText={(text) => setFormData({ ...formData, steps: text })}
-              multiline
-            />
-
-            <View style={styles.row}>
+            <ScrollView>
               <TextInput
-                style={[styles.input, styles.halfInput]}
-                placeholder="Servings"
-                value={formData.servings}
+                style={styles.input}
+                placeholder="Title"
+                value={formData.title}
                 onChangeText={(text) =>
-                  setFormData({ ...formData, servings: text })
+                  setFormData({ ...formData, title: text })
                 }
-                keyboardType="numeric"
               />
               <TextInput
-                style={[styles.input, styles.halfInput]}
-                placeholder="Cooking time (min)"
-                value={formData.cookingTime}
+                style={styles.input}
+                placeholder="Description"
+                value={formData.description}
                 onChangeText={(text) =>
-                  setFormData({ ...formData, cookingTime: text })
+                  setFormData({ ...formData, description: text })
                 }
-                keyboardType="numeric"
               />
-            </View>
-
+              <TextInput
+                style={[styles.input, styles.textarea]}
+                placeholder="Ingredients (one per line)"
+                value={formData.ingredients}
+                onChangeText={(text) =>
+                  setFormData({ ...formData, ingredients: text })
+                }
+                multiline
+              />
+              <TextInput
+                style={[styles.input, styles.textarea]}
+                placeholder="Steps (one per line)"
+                value={formData.steps}
+                onChangeText={(text) =>
+                  setFormData({ ...formData, steps: text })
+                }
+                multiline
+              />
+              <View style={styles.row}>
+                <TextInput
+                  style={[styles.input, styles.halfInput]}
+                  placeholder="Servings"
+                  value={formData.servings}
+                  onChangeText={(text) =>
+                    setFormData({ ...formData, servings: text })
+                  }
+                  keyboardType="numeric"
+                />
+                <TextInput
+                  style={[styles.input, styles.halfInput]}
+                  placeholder="Time (min)"
+                  value={formData.cookingTime}
+                  onChangeText={(text) =>
+                    setFormData({ ...formData, cookingTime: text })
+                  }
+                  keyboardType="numeric"
+                />
+              </View>
+            </ScrollView>
             <View style={styles.buttonRow}>
               <TouchableOpacity
                 style={[styles.button, styles.saveBtn]}
@@ -324,15 +436,46 @@ export default function RecipesScreen() {
           </View>
         </View>
       </Modal>
+
+      <Modal visible={groupsModalVisible} transparent animationType="slide">
+        <View style={styles.modal}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Assign to Groups</Text>
+            <ScrollView>
+              {groups.length === 0 ? (
+                <Text style={styles.emptyText}>No groups created yet</Text>
+              ) : (
+                groups.map((group) => (
+                  <TouchableOpacity
+                    key={group._id}
+                    style={styles.groupOption}
+                    onPress={() => handleToggleGroup(group._id)}
+                  >
+                    <View style={styles.checkbox}>
+                      {selectedRecipeForGroups?.groups.includes(group._id) && (
+                        <Text style={styles.checkboxCheck}>✓</Text>
+                      )}
+                    </View>
+                    <Text style={styles.groupOptionText}>{group.name}</Text>
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+            <TouchableOpacity
+              style={[styles.button, styles.saveBtn]}
+              onPress={() => setGroupsModalVisible(false)}
+            >
+              <Text style={styles.buttonText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.white,
-  },
+  container: { flex: 1, backgroundColor: colors.white },
   header: {
     backgroundColor: colors.primary,
     paddingTop: spacing.xxl,
@@ -350,35 +493,33 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.gray,
   },
-  tab: {
-    flex: 1,
-    paddingVertical: spacing.md,
-    alignItems: "center",
+  tab: { flex: 1, paddingVertical: spacing.md, alignItems: "center" },
+  tabActive: { borderBottomWidth: 3, borderBottomColor: colors.primary },
+  tabText: { fontSize: fontSize.sm, color: colors.textSecondary },
+  tabTextActive: { color: colors.primary, fontWeight: fontWeight.semibold },
+  groupsScroll: {
+    backgroundColor: colors.lightGray,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
-  tabActive: {
-    borderBottomWidth: 3,
-    borderBottomColor: colors.primary,
+  groupChip: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    marginRight: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.gray,
   },
-  tabText: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
+  groupChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
-  tabTextActive: {
-    color: colors.primary,
-    fontWeight: fontWeight.semibold,
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  emptyText: {
-    fontSize: fontSize.base,
-    color: colors.textSecondary,
-  },
-  listContent: {
-    padding: spacing.md,
-  },
+  groupChipText: { fontSize: fontSize.xs, color: colors.textPrimary },
+  groupChipTextActive: { color: colors.white, fontWeight: fontWeight.semibold },
+  centerContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  emptyText: { fontSize: fontSize.base, color: colors.textSecondary },
+  listContent: { padding: spacing.md },
   recipeCard: {
     backgroundColor: colors.lightGray,
     borderRadius: borderRadius.lg,
@@ -401,10 +542,21 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: spacing.md,
   },
-  actions: {
+  groupBadges: {
     flexDirection: "row",
-    gap: spacing.md,
+    flexWrap: "wrap",
+    gap: spacing.xs,
+    marginBottom: spacing.md,
   },
+  groupBadge: {
+    backgroundColor: colors.primary,
+    color: colors.white,
+    fontSize: fontSize.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.md,
+  },
+  actions: { flexDirection: "row", gap: spacing.md },
   actionBtn: {
     flex: 1,
     backgroundColor: colors.primary,
@@ -412,9 +564,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     alignItems: "center",
   },
-  deleteBtn: {
-    backgroundColor: colors.error,
-  },
+  deleteBtn: { backgroundColor: colors.error },
   actionBtnText: {
     color: colors.white,
     fontSize: fontSize.xs,
@@ -465,36 +615,44 @@ const styles = StyleSheet.create({
     borderColor: colors.gray,
     color: colors.textPrimary,
   },
-  textarea: {
-    height: 80,
-    textAlignVertical: "top",
-  },
-  row: {
-    flexDirection: "row",
-    gap: spacing.md,
-  },
-  halfInput: {
-    flex: 1,
-  },
-  buttonRow: {
-    flexDirection: "row",
-    gap: spacing.md,
-  },
+  textarea: { height: 80, textAlignVertical: "top" },
+  row: { flexDirection: "row", gap: spacing.md },
+  halfInput: { flex: 1 },
+  buttonRow: { flexDirection: "row", gap: spacing.md },
   button: {
     flex: 1,
     paddingVertical: spacing.md,
     borderRadius: borderRadius.md,
     alignItems: "center",
   },
-  saveBtn: {
-    backgroundColor: colors.primary,
-  },
-  cancelBtn: {
-    backgroundColor: colors.gray,
-  },
+  saveBtn: { backgroundColor: colors.primary },
+  cancelBtn: { backgroundColor: colors.gray },
   buttonText: {
     color: colors.white,
     fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
   },
+  groupOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: spacing.md,
+  },
+  checkboxCheck: {
+    color: colors.primary,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
+  },
+  groupOptionText: { fontSize: fontSize.base, color: colors.textPrimary },
 });
