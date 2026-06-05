@@ -1,10 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import {
-  AuthResponse,
-  LoginCredentials,
-  RegisterCredentials,
-} from "../../_shared/_types";
+    AuthResponse,
+    LoginCredentials,
+    RegisterCredentials,
+} from "../_shared/_types";
 import ENV from "../config/env";
 
 const api = axios.create({

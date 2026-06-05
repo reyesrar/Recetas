@@ -3,24 +3,24 @@ import axios from "axios";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import { useAuth } from "../../_shared/_contexts";
-import { strings } from "../../_shared/strings";
+import { useAuth } from "../_shared/_contexts";
+import { strings } from "../_shared/strings";
 import {
-  borderRadius,
-  colors,
-  fontSize,
-  fontWeight,
-  spacing,
-} from "../../_shared/theme";
+    borderRadius,
+    colors,
+    fontSize,
+    fontWeight,
+    spacing,
+} from "../_shared/theme";
 
 export default function ProfileScreen() {
   const { user, loading, signOut } = useAuth();

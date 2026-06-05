@@ -1,17 +1,7 @@
-import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  View
-} from "react-native";
-import { useAuth } from "../../_shared/_contexts";
-import { strings } from "../../_shared/strings";
-import {
-  colors,
-  fontSize,
-  fontWeight,
-  spacing
-} from "../../_shared/theme";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { useAuth } from "../_shared/_contexts";
+import { strings } from "../_shared/strings";
+import { colors, fontSize, fontWeight, spacing } from "../_shared/theme";
 
 export default function RecipesScreen() {
   const { user, loading } = useAuth();

@@ -1,27 +1,27 @@
 import { Link, router } from "expo-router";
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import { useAuth } from "../../_shared/_contexts";
-import type { RegisterCredentials } from "../../_shared/_types";
-import { strings } from "../../_shared/strings";
+import { useAuth } from "../_shared/_contexts";
+import type { RegisterCredentials } from "../_shared/_types";
+import { strings } from "../_shared/strings";
 import {
-  borderRadius,
-  colors,
-  fontSize,
-  fontWeight,
-  spacing,
-} from "../../_shared/theme";
+    borderRadius,
+    colors,
+    fontSize,
+    fontWeight,
+    spacing,
+} from "../_shared/theme";
 
 interface ValidationErrors {
   name?: string;
