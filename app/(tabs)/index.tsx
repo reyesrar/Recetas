@@ -1,25 +1,29 @@
+import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
 import { useAuth } from "../../_shared/_contexts";
 import type { Group, Recipe } from "../../_shared/_types";
 import { strings } from "../../_shared/strings";
 import {
-    borderRadius,
-    colors,
-    fontSize,
-    fontWeight,
-    spacing,
+  borderRadius,
+  colors,
+  fontSize,
+  fontWeight,
+  spacing,
 } from "../../_shared/theme";
 import apiClient from "../services/api";
 
@@ -35,20 +39,33 @@ export default function RecipesScreen() {
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
   const [selectedRecipeForGroups, setSelectedRecipeForGroups] =
     useState<Recipe | null>(null);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     ingredients: "",
     steps: "",
-    servings: "1",
-    cookingTime: "0",
+    servings: "",
+    cookingTime: "",
     difficulty: "easy" as "easy" | "medium" | "hard",
   });
+
+  const params = useLocalSearchParams();
 
   useEffect(() => {
     fetchRecipes();
     fetchGroups();
   }, [viewType, selectedGroup]);
+
+  useEffect(() => {
+    // If navigated with a group param, apply it
+    if (params?.group) {
+      setSelectedGroup((params as any).group as string);
+      setViewType(((params as any).view as "my" | "all") || "all");
+    }
+  }, [params]);
 
   const fetchRecipes = async () => {
     try {
@@ -90,13 +107,19 @@ export default function RecipesScreen() {
     }
 
     try {
+      const servingsValue =
+        formData.servings.trim() === "" ? 1 : parseInt(formData.servings, 10);
+      const cookingTimeValue =
+        formData.cookingTime.trim() === ""
+          ? 0
+          : parseInt(formData.cookingTime, 10);
       const data = {
         title: formData.title.trim(),
         description: formData.description.trim(),
         ingredients: formData.ingredients.split("\n").filter((i) => i.trim()),
         steps: formData.steps.split("\n").filter((s) => s.trim()),
-        servings: parseInt(formData.servings),
-        cookingTime: parseInt(formData.cookingTime),
+        servings: servingsValue,
+        cookingTime: cookingTimeValue,
         difficulty: formData.difficulty,
       };
 
@@ -171,8 +194,8 @@ export default function RecipesScreen() {
       description: "",
       ingredients: "",
       steps: "",
-      servings: "1",
-      cookingTime: "0",
+      servings: "",
+      cookingTime: "",
       difficulty: "easy",
     });
     setModalVisible(false);
@@ -239,46 +262,16 @@ export default function RecipesScreen() {
         </TouchableOpacity>
       </View>
 
-      {viewType === "my" && groups.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.groupsScroll}
-        >
-          <TouchableOpacity
-            style={[styles.groupChip, !selectedGroup && styles.groupChipActive]}
-            onPress={() => setSelectedGroup(null)}
-          >
-            <Text
-              style={[
-                styles.groupChipText,
-                !selectedGroup && styles.groupChipTextActive,
-              ]}
-            >
-              All
-            </Text>
-          </TouchableOpacity>
-          {groups.map((group) => (
-            <TouchableOpacity
-              key={group._id}
-              style={[
-                styles.groupChip,
-                selectedGroup === group._id && styles.groupChipActive,
-              ]}
-              onPress={() => setSelectedGroup(group._id)}
-            >
-              <Text
-                style={[
-                  styles.groupChipText,
-                  selectedGroup === group._id && styles.groupChipTextActive,
-                ]}
-              >
-                {group.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      )}
+      {/* Search input for My / All */}
+      <View style={styles.searchRow}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search recipes by name"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          returnKeyType="search"
+        />
+      </View>
 
       {loading ? (
         <View style={styles.centerContainer}>
@@ -290,56 +283,38 @@ export default function RecipesScreen() {
         </View>
       ) : (
         <FlatList
-          data={recipes}
+          data={recipes.filter((r) =>
+            r.title.toLowerCase().includes(searchQuery.toLowerCase()),
+          )}
           keyExtractor={(item) => item._id}
           renderItem={({ item }) => (
-            <View style={styles.recipeCard}>
-              <View>
-                <Text style={styles.recipeTitle}>{item.title}</Text>
-                <Text style={styles.recipeMeta}>
-                  {item.cookingTime}min • {item.difficulty} • {item.servings}s
-                </Text>
-                {item.description && (
-                  <Text style={styles.recipeDesc}>{item.description}</Text>
-                )}
-                {item.groups.length > 0 && (
-                  <View style={styles.groupBadges}>
-                    {item.groups.map((g: any) => (
-                      <Text key={g._id || g} style={styles.groupBadge}>
-                        {typeof g === "string" ? g : g.name}
-                      </Text>
-                    ))}
-                  </View>
-                )}
+            <TouchableOpacity
+              onPress={() => {
+                setSelectedRecipe(item);
+                setDetailModalVisible(true);
+              }}
+            >
+              <View style={styles.recipeCard}>
+                <View>
+                  <Text style={styles.recipeTitle}>{item.title}</Text>
+                  <Text style={styles.recipeMeta}>
+                    {item.cookingTime}min • {item.difficulty} • {item.servings}s
+                  </Text>
+                  {item.description && (
+                    <Text style={styles.recipeDesc}>{item.description}</Text>
+                  )}
+                  {item.groups.length > 0 && (
+                    <View style={styles.groupBadges}>
+                      {item.groups.map((g: any) => (
+                        <Text key={g._id || g} style={styles.groupBadge}>
+                          {typeof g === "string" ? g : g.name}
+                        </Text>
+                      ))}
+                    </View>
+                  )}
+                </View>
               </View>
-              <View style={styles.actions}>
-                <TouchableOpacity
-                  style={styles.actionBtn}
-                  onPress={() => {
-                    setSelectedRecipeForGroups(item);
-                    setGroupsModalVisible(true);
-                  }}
-                >
-                  <Text style={styles.actionBtnText}>Groups</Text>
-                </TouchableOpacity>
-                {viewType === "my" && (
-                  <>
-                    <TouchableOpacity
-                      style={styles.actionBtn}
-                      onPress={() => openEditModal(item)}
-                    >
-                      <Text style={styles.actionBtnText}>Edit</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.actionBtn, styles.deleteBtn]}
-                      onPress={() => handleDeleteRecipe(item._id)}
-                    >
-                      <Text style={styles.actionBtnText}>Delete</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-              </View>
-            </View>
+            </TouchableOpacity>
           )}
           contentContainerStyle={styles.listContent}
         />
@@ -357,118 +332,267 @@ export default function RecipesScreen() {
         </TouchableOpacity>
       )}
 
-      <Modal visible={modalVisible} transparent animationType="slide">
-        <View style={styles.modal}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
-              {editingRecipe ? "Edit Recipe" : "New Recipe"}
-            </Text>
-            <ScrollView>
-              <TextInput
-                style={styles.input}
-                placeholder="Title"
-                value={formData.title}
-                onChangeText={(text) =>
-                  setFormData({ ...formData, title: text })
-                }
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Description"
-                value={formData.description}
-                onChangeText={(text) =>
-                  setFormData({ ...formData, description: text })
-                }
-              />
-              <TextInput
-                style={[styles.input, styles.textarea]}
-                placeholder="Ingredients (one per line)"
-                value={formData.ingredients}
-                onChangeText={(text) =>
-                  setFormData({ ...formData, ingredients: text })
-                }
-                multiline
-              />
-              <TextInput
-                style={[styles.input, styles.textarea]}
-                placeholder="Steps (one per line)"
-                value={formData.steps}
-                onChangeText={(text) =>
-                  setFormData({ ...formData, steps: text })
-                }
-                multiline
-              />
-              <View style={styles.row}>
-                <TextInput
-                  style={[styles.input, styles.halfInput]}
-                  placeholder="Servings"
-                  value={formData.servings}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, servings: text })
-                  }
-                  keyboardType="numeric"
-                />
-                <TextInput
-                  style={[styles.input, styles.halfInput]}
-                  placeholder="Time (min)"
-                  value={formData.cookingTime}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, cookingTime: text })
-                  }
-                  keyboardType="numeric"
-                />
-              </View>
-            </ScrollView>
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={[styles.button, styles.saveBtn]}
-                onPress={handleSaveRecipe}
+      {/* Detail modal for a selected recipe */}
+      <Modal
+        visible={detailModalVisible}
+        transparent
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setDetailModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setDetailModalVisible(false)}>
+          <View style={styles.modal}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
               >
-                <Text style={styles.buttonText}>Save</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, styles.cancelBtn]}
-                onPress={resetForm}
-              >
-                <Text style={styles.buttonText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
+                <View style={styles.modalContent}>
+                  <Text style={styles.modalTitle}>{selectedRecipe?.title}</Text>
+                  <Text style={styles.recipeMeta}>
+                    {selectedRecipe?.cookingTime}min •{" "}
+                    {selectedRecipe?.difficulty} • {selectedRecipe?.servings}s
+                  </Text>
+                  <Text style={styles.label}>
+                    Created by:{" "}
+                    {selectedRecipe && typeof selectedRecipe.userId !== "string"
+                      ? (selectedRecipe.userId as any).name
+                      : "Unknown"}
+                  </Text>
+                  {selectedRecipe?.description && (
+                    <Text style={styles.recipeDesc}>
+                      {selectedRecipe.description}
+                    </Text>
+                  )}
+                  <Text style={[styles.modalTitle, { marginTop: spacing.md }]}>
+                    Ingredients
+                  </Text>
+                  {selectedRecipe?.ingredients.map((ing, i) => (
+                    <Text key={i} style={styles.inputText}>
+                      • {ing}
+                    </Text>
+                  ))}
+                  <Text style={[styles.modalTitle, { marginTop: spacing.md }]}>
+                    Steps
+                  </Text>
+                  {selectedRecipe?.steps.map((s, i) => (
+                    <Text key={i} style={styles.inputText}>
+                      {i + 1}. {s}
+                    </Text>
+                  ))}
+
+                  <View style={[styles.buttonRow, { marginTop: spacing.md }]}>
+                    {user &&
+                      selectedRecipe &&
+                      (typeof selectedRecipe.userId !== "string"
+                        ? (selectedRecipe.userId as any)._id === user._id
+                        : selectedRecipe.userId === user._id) && (
+                        <>
+                          <TouchableOpacity
+                            style={[styles.button, styles.saveBtn]}
+                            onPress={() => {
+                              openEditModal(selectedRecipe);
+                              setDetailModalVisible(false);
+                            }}
+                          >
+                            <Text style={styles.buttonText}>Edit</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.button, styles.deleteBtn]}
+                            onPress={() => {
+                              handleDeleteRecipe(selectedRecipe._id);
+                              setDetailModalVisible(false);
+                            }}
+                          >
+                            <Text style={styles.buttonText}>Delete</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.button, styles.actionBtn]}
+                            onPress={() => {
+                              setSelectedRecipeForGroups(selectedRecipe);
+                              setGroupsModalVisible(true);
+                              setDetailModalVisible(false);
+                            }}
+                          >
+                            <Text style={styles.buttonText}>Add to group</Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
+
+                    <TouchableOpacity
+                      style={[styles.button, styles.cancelBtn]}
+                      onPress={() => setDetailModalVisible(false)}
+                    >
+                      <Text style={styles.buttonText}>Close</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </KeyboardAvoidingView>
+            </TouchableWithoutFeedback>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
 
-      <Modal visible={groupsModalVisible} transparent animationType="slide">
-        <View style={styles.modal}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Assign to Groups</Text>
-            <ScrollView>
-              {groups.length === 0 ? (
-                <Text style={styles.emptyText}>No groups created yet</Text>
-              ) : (
-                groups.map((group) => (
-                  <TouchableOpacity
-                    key={group._id}
-                    style={styles.groupOption}
-                    onPress={() => handleToggleGroup(group._id)}
-                  >
-                    <View style={styles.checkbox}>
-                      {selectedRecipeForGroups?.groups.includes(group._id) && (
-                        <Text style={styles.checkboxCheck}>✓</Text>
-                      )}
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={resetForm}
+      >
+        <TouchableWithoutFeedback onPress={resetForm}>
+          <View style={styles.modal}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+              >
+                <View style={styles.modalContent}>
+                  <Text style={styles.modalTitle}>
+                    {editingRecipe ? "Edit Recipe" : "New Recipe"}
+                  </Text>
+                  <ScrollView keyboardShouldPersistTaps="handled">
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Title"
+                      value={formData.title}
+                      onChangeText={(text) =>
+                        setFormData({ ...formData, title: text })
+                      }
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Description"
+                      value={formData.description}
+                      onChangeText={(text) =>
+                        setFormData({ ...formData, description: text })
+                      }
+                    />
+                    <TextInput
+                      style={[styles.input, styles.textarea]}
+                      placeholder="Ingredients (one per line)"
+                      value={formData.ingredients}
+                      onChangeText={(text) =>
+                        setFormData({ ...formData, ingredients: text })
+                      }
+                      multiline
+                    />
+                    <TextInput
+                      style={[styles.input, styles.textarea]}
+                      placeholder="Steps (one per line)"
+                      value={formData.steps}
+                      onChangeText={(text) =>
+                        setFormData({ ...formData, steps: text })
+                      }
+                      multiline
+                    />
+                    <View style={styles.row}>
+                      <TextInput
+                        style={[styles.input, styles.halfInput]}
+                        placeholder="Servings"
+                        value={formData.servings}
+                        onChangeText={(text) =>
+                          setFormData({ ...formData, servings: text })
+                        }
+                        keyboardType="numeric"
+                      />
+                      <TextInput
+                        style={[styles.input, styles.halfInput]}
+                        placeholder="Time (min)"
+                        value={formData.cookingTime}
+                        onChangeText={(text) =>
+                          setFormData({ ...formData, cookingTime: text })
+                        }
+                        keyboardType="numeric"
+                      />
                     </View>
-                    <Text style={styles.groupOptionText}>{group.name}</Text>
-                  </TouchableOpacity>
-                ))
-              )}
-            </ScrollView>
-            <TouchableOpacity
-              style={[styles.button, styles.saveBtn]}
-              onPress={() => setGroupsModalVisible(false)}
-            >
-              <Text style={styles.buttonText}>Done</Text>
-            </TouchableOpacity>
+
+                    <Text
+                      style={[styles.modalTitle, { marginTop: spacing.md }]}
+                    >
+                      Difficulty
+                    </Text>
+                    <View style={styles.difficultyRow}>
+                      {(["easy", "medium", "hard"] as const).map((d) => (
+                        <TouchableOpacity
+                          key={d}
+                          style={[
+                            styles.difficultyBtn,
+                            formData.difficulty === d &&
+                              styles.difficultyBtnActive,
+                          ]}
+                          onPress={() =>
+                            setFormData({ ...formData, difficulty: d })
+                          }
+                        >
+                          <Text
+                            style={
+                              formData.difficulty === d
+                                ? styles.difficultyTextActive
+                                : styles.difficultyText
+                            }
+                          >
+                            {d}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </ScrollView>
+                  <View style={styles.buttonRow}>
+                    <TouchableOpacity
+                      style={[styles.button, styles.saveBtn]}
+                      onPress={handleSaveRecipe}
+                    >
+                      <Text style={styles.buttonText}>Save</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.button, styles.cancelBtn]}
+                      onPress={resetForm}
+                    >
+                      <Text style={styles.buttonText}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </KeyboardAvoidingView>
+            </TouchableWithoutFeedback>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      <Modal
+        visible={groupsModalVisible}
+        transparent
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setGroupsModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setGroupsModalVisible(false)}>
+          <View style={styles.modal}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Assign to Groups</Text>
+                <ScrollView>
+                  {groups.length === 0 ? (
+                    <Text style={styles.emptyText}>No groups created yet</Text>
+                  ) : (
+                    groups.map((group) => (
+                      <TouchableOpacity
+                        key={group._id}
+                        style={styles.groupOption}
+                        onPress={() => handleToggleGroup(group._id)}
+                      >
+                        <View style={styles.checkbox}>
+                          {selectedRecipeForGroups?.groups?.includes(
+                            group._id,
+                          ) && <Text style={styles.checkboxCheck}>✓</Text>}
+                        </View>
+                        <Text style={styles.groupOptionText}>{group.name}</Text>
+                      </TouchableOpacity>
+                    ))
+                  )}
+                </ScrollView>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
       </Modal>
     </View>
   );
@@ -626,7 +750,44 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   saveBtn: { backgroundColor: colors.primary },
-  cancelBtn: { backgroundColor: colors.gray },
+  cancelBtn: { backgroundColor: colors.darkGray },
+  searchRow: { padding: spacing.md, backgroundColor: colors.white },
+  searchInput: {
+    backgroundColor: colors.lightGray,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.gray,
+    color: colors.textPrimary,
+  },
+  label: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+  },
+  inputText: {
+    fontSize: fontSize.base,
+    color: colors.textPrimary,
+    marginBottom: spacing.xs,
+  },
+  difficultyRow: {
+    flexDirection: "row",
+    gap: spacing.md,
+    marginTop: spacing.sm,
+  },
+  difficultyBtn: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.lightGray,
+  },
+  difficultyBtnActive: { backgroundColor: colors.primary },
+  difficultyText: { color: colors.textPrimary },
+  difficultyTextActive: {
+    color: colors.white,
+    fontWeight: fontWeight.semibold,
+  },
   buttonText: {
     color: colors.white,
     fontSize: fontSize.base,

@@ -1,13 +1,17 @@
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
     FlatList,
+    KeyboardAvoidingView,
     Modal,
+    Platform,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
+    TouchableWithoutFeedback,
     View,
 } from "react-native";
 import { useAuth } from "../../_shared/_contexts";
@@ -129,28 +133,35 @@ export default function GroupsScreen() {
           data={groups}
           keyExtractor={(item) => item._id}
           renderItem={({ item }) => (
-            <View style={styles.groupCard}>
-              <View>
-                <Text style={styles.groupName}>{item.name}</Text>
-                {item.description && (
-                  <Text style={styles.groupDesc}>{item.description}</Text>
-                )}
+            <TouchableOpacity
+              onPress={() => {
+                // Navigate to recipes tab filtered by this group
+                router.push(`/(tabs)?group=${item._id}&view=all` as any);
+              }}
+            >
+              <View style={styles.groupCard}>
+                <View>
+                  <Text style={styles.groupName}>{item.name}</Text>
+                  {item.description && (
+                    <Text style={styles.groupDesc}>{item.description}</Text>
+                  )}
+                </View>
+                <View style={styles.actions}>
+                  <TouchableOpacity
+                    style={styles.actionBtn}
+                    onPress={() => openEditModal(item)}
+                  >
+                    <Text style={styles.actionBtnText}>Edit</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.actionBtn, styles.deleteBtn]}
+                    onPress={() => handleDeleteGroup(item._id)}
+                  >
+                    <Text style={styles.actionBtnText}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-              <View style={styles.actions}>
-                <TouchableOpacity
-                  style={styles.actionBtn}
-                  onPress={() => openEditModal(item)}
-                >
-                  <Text style={styles.actionBtnText}>Edit</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionBtn, styles.deleteBtn]}
-                  onPress={() => handleDeleteGroup(item._id)}
-                >
-                  <Text style={styles.actionBtnText}>Delete</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            </TouchableOpacity>
           )}
           contentContainerStyle={styles.listContent}
         />
@@ -166,43 +177,59 @@ export default function GroupsScreen() {
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
 
-      <Modal visible={modalVisible} transparent animationType="slide">
-        <View style={styles.modal}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
-              {editingGroup ? "Edit Group" : "New Group"}
-            </Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Group name"
-              value={formData.name}
-              onChangeText={(text) => setFormData({ ...formData, name: text })}
-            />
-            <TextInput
-              style={[styles.input, styles.textarea]}
-              placeholder="Description"
-              value={formData.description}
-              onChangeText={(text) =>
-                setFormData({ ...formData, description: text })
-              }
-              multiline
-            />
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={[styles.button, styles.saveBtn]}
-                onPress={handleSaveGroup}
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={resetForm}
+      >
+        <TouchableWithoutFeedback onPress={resetForm}>
+          <View style={styles.modal}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
               >
-                <Text style={styles.buttonText}>Save</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, styles.cancelBtn]}
-                onPress={resetForm}
-              >
-                <Text style={styles.buttonText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
+                <View style={styles.modalContent}>
+                  <Text style={styles.modalTitle}>
+                    {editingGroup ? "Edit Group" : "New Group"}
+                  </Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Group name"
+                    value={formData.name}
+                    onChangeText={(text) =>
+                      setFormData({ ...formData, name: text })
+                    }
+                  />
+                  <TextInput
+                    style={[styles.input, styles.textarea]}
+                    placeholder="Description"
+                    value={formData.description}
+                    onChangeText={(text) =>
+                      setFormData({ ...formData, description: text })
+                    }
+                    multiline
+                  />
+                  <View style={styles.buttonRow}>
+                    <TouchableOpacity
+                      style={[styles.button, styles.saveBtn]}
+                      onPress={handleSaveGroup}
+                    >
+                      <Text style={styles.buttonText}>Save</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.button, styles.cancelBtn]}
+                      onPress={resetForm}
+                    >
+                      <Text style={styles.buttonText}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </KeyboardAvoidingView>
+            </TouchableWithoutFeedback>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
     </View>
   );
@@ -309,7 +336,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   saveBtn: { backgroundColor: colors.primary },
-  cancelBtn: { backgroundColor: colors.gray },
+  cancelBtn: { backgroundColor: colors.darkGray },
   buttonText: {
     color: colors.white,
     fontSize: fontSize.base,

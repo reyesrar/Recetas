@@ -13,6 +13,7 @@ interface AuthContextData {
     credentials: RegisterCredentials,
   ) => Promise<{ success: boolean; message: string }>;
   signOut: () => Promise<void>;
+  updateUser: (user: User) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
@@ -81,8 +82,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setUser(null);
   };
 
+  const updateUser = async (newUser: User) => {
+    try {
+      await AsyncStorage.setItem("user", JSON.stringify(newUser));
+      setUser(newUser);
+    } catch (error) {
+      console.error("Error updating stored user:", error);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider
+      value={{ user, loading, signIn, signUp, signOut, updateUser }}
+    >
       {children}
     </AuthContext.Provider>
   );

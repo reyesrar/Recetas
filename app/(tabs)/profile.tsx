@@ -1,28 +1,30 @@
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { useAuth } from "../../_shared/_contexts";
 import { strings } from "../../_shared/strings";
 import {
-  borderRadius,
-  colors,
-  fontSize,
-  fontWeight,
-  spacing,
+    borderRadius,
+    colors,
+    fontSize,
+    fontWeight,
+    spacing,
 } from "../../_shared/theme";
 import apiClient from "../services/api";
 
 export default function ProfileScreen() {
-  const { user, loading, signOut } = useAuth();
+  const { user, loading, signOut, updateUser } = useAuth();
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(user?.name || "");
   const [editEmail, setEditEmail] = useState(user?.email || "");
@@ -52,6 +54,13 @@ export default function ProfileScreen() {
       });
 
       if (response.data.success) {
+        // Update context and storage so changes reflect immediately
+        const updatedUser = response.data.data ?? {
+          ...user,
+          name: editName.trim(),
+          email: editEmail.trim(),
+        };
+        await updateUser(updatedUser as any);
         Alert.alert("Success", "Profile updated");
         setEditing(false);
       }
@@ -64,6 +73,14 @@ export default function ProfileScreen() {
       setUpdating(false);
     }
   };
+
+  // When entering edit mode, populate fields from the latest user data
+  useEffect(() => {
+    if (editing) {
+      setEditName(user?.name || "");
+      setEditEmail(user?.email || "");
+    }
+  }, [editing, user]);
 
   const handleDeleteAccount = async () => {
     if (!deletePassword) {
@@ -99,147 +116,158 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>{strings.tabs.profile}</Text>
-      </View>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1 }}
+    >
+      <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>{strings.tabs.profile}</Text>
+        </View>
 
-      <View style={styles.content}>
-        {!editing ? (
-          <View style={styles.userCard}>
-            <View style={styles.infoRow}>
-              <Text style={styles.label}>{strings.profile.name}</Text>
-              <Text style={styles.value}>{user?.name}</Text>
+        <View style={styles.content}>
+          {!editing ? (
+            <View style={styles.userCard}>
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>{strings.profile.name}</Text>
+                <Text style={styles.value}>{user?.name}</Text>
+              </View>
+              <View style={styles.divider} />
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>{strings.profile.email}</Text>
+                <Text style={styles.value}>{user?.email}</Text>
+              </View>
+              <View style={styles.divider} />
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>{strings.profile.memberSince}</Text>
+                <Text style={styles.value}>
+                  {user?.createdAt
+                    ? new Date(user.createdAt).toLocaleDateString()
+                    : "---"}
+                </Text>
+              </View>
             </View>
-            <View style={styles.divider} />
-            <View style={styles.infoRow}>
-              <Text style={styles.label}>{strings.profile.email}</Text>
-              <Text style={styles.value}>{user?.email}</Text>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.infoRow}>
-              <Text style={styles.label}>{strings.profile.memberSince}</Text>
-              <Text style={styles.value}>
-                {user?.createdAt
-                  ? new Date(user.createdAt).toLocaleDateString()
-                  : "---"}
-              </Text>
-            </View>
-          </View>
-        ) : (
-          <View style={styles.editCard}>
-            <TextInput
-              style={styles.editInput}
-              placeholder="Name"
-              value={editName}
-              onChangeText={setEditName}
-              editable={!updating}
-            />
-            <TextInput
-              style={styles.editInput}
-              placeholder="Email"
-              value={editEmail}
-              onChangeText={setEditEmail}
-              keyboardType="email-address"
-              editable={!updating}
-            />
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={[
-                  styles.smallButton,
-                  { backgroundColor: colors.primary },
-                ]}
-                onPress={handleSaveProfile}
-                disabled={updating}
-              >
-                {updating ? (
-                  <ActivityIndicator color={colors.white} size="small" />
-                ) : (
-                  <Text style={styles.smallButtonText}>Save</Text>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.smallButton, { backgroundColor: colors.gray }]}
-                onPress={() => setEditing(false)}
-                disabled={updating}
-              >
-                <Text style={styles.smallButtonText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
-        {!editing && (
-          <>
-            <TouchableOpacity
-              style={styles.editButton}
-              onPress={() => setEditing(true)}
-            >
-              <Text style={styles.editButtonText}>Edit Profile</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => setDeleteModalVisible(true)}
-            >
-              <Text style={styles.deleteButtonText}>Delete Account</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.logoutButton}
-              onPress={handleLogout}
-            >
-              <Text style={styles.logoutText}>{strings.profile.logout}</Text>
-            </TouchableOpacity>
-          </>
-        )}
-
-        {deleteModalVisible && (
-          <View style={styles.modal}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Delete Account</Text>
-              <Text style={styles.modalMessage}>
-                This action cannot be undone. Enter your password to confirm.
-              </Text>
+          ) : (
+            <View style={styles.editCard}>
               <TextInput
                 style={styles.editInput}
-                placeholder="Password"
-                secureTextEntry
-                value={deletePassword}
-                onChangeText={setDeletePassword}
+                placeholder="Name"
+                value={editName}
+                onChangeText={setEditName}
+                editable={!updating}
+              />
+              <TextInput
+                style={styles.editInput}
+                placeholder="Email"
+                value={editEmail}
+                onChangeText={setEditEmail}
+                keyboardType="email-address"
                 editable={!updating}
               />
               <View style={styles.buttonRow}>
                 <TouchableOpacity
                   style={[
                     styles.smallButton,
-                    { backgroundColor: colors.error },
+                    { backgroundColor: colors.primary },
                   ]}
-                  onPress={handleDeleteAccount}
+                  onPress={handleSaveProfile}
                   disabled={updating}
                 >
                   {updating ? (
                     <ActivityIndicator color={colors.white} size="small" />
                   ) : (
-                    <Text style={styles.smallButtonText}>Delete</Text>
+                    <Text style={styles.smallButtonText}>Save</Text>
                   )}
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.smallButton, { backgroundColor: colors.gray }]}
-                  onPress={() => {
-                    setDeleteModalVisible(false);
-                    setDeletePassword("");
-                  }}
+                  style={[
+                    styles.smallButton,
+                    { backgroundColor: colors.darkGray },
+                  ]}
+                  onPress={() => setEditing(false)}
                   disabled={updating}
                 >
                   <Text style={styles.smallButtonText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
-        )}
-      </View>
-    </ScrollView>
+          )}
+
+          {!editing && (
+            <>
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={() => setEditing(true)}
+              >
+                <Text style={styles.editButtonText}>Edit Profile</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => setDeleteModalVisible(true)}
+              >
+                <Text style={styles.deleteButtonText}>Delete Account</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.logoutButton}
+                onPress={handleLogout}
+              >
+                <Text style={styles.logoutText}>{strings.profile.logout}</Text>
+              </TouchableOpacity>
+            </>
+          )}
+
+          {deleteModalVisible && (
+            <View style={styles.modal}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Delete Account</Text>
+                <Text style={styles.modalMessage}>
+                  This action cannot be undone. Enter your password to confirm.
+                </Text>
+                <TextInput
+                  style={styles.editInput}
+                  placeholder="Password"
+                  secureTextEntry
+                  value={deletePassword}
+                  onChangeText={setDeletePassword}
+                  editable={!updating}
+                />
+                <View style={styles.buttonRow}>
+                  <TouchableOpacity
+                    style={[
+                      styles.smallButton,
+                      { backgroundColor: colors.error },
+                    ]}
+                    onPress={handleDeleteAccount}
+                    disabled={updating}
+                  >
+                    {updating ? (
+                      <ActivityIndicator color={colors.white} size="small" />
+                    ) : (
+                      <Text style={styles.smallButtonText}>Delete</Text>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.smallButton,
+                      { backgroundColor: colors.darkGray },
+                    ]}
+                    onPress={() => {
+                      setDeleteModalVisible(false);
+                      setDeletePassword("");
+                    }}
+                    disabled={updating}
+                  >
+                    <Text style={styles.smallButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
