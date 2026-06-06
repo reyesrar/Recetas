@@ -1,26 +1,26 @@
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import { useAuth } from "../_shared/_contexts";
-import type { Group, Recipe } from "../_shared/_types";
-import { strings } from "../_shared/strings";
+import { useAuth } from "../../_shared/_contexts";
+import type { Group, Recipe } from "../../_shared/_types";
+import { strings } from "../../_shared/strings";
 import {
-  borderRadius,
-  colors,
-  fontSize,
-  fontWeight,
-  spacing,
-} from "../_shared/theme";
+    borderRadius,
+    colors,
+    fontSize,
+    fontWeight,
+    spacing,
+} from "../../_shared/theme";
 import apiClient from "../services/api";
 
 export default function RecipesScreen() {

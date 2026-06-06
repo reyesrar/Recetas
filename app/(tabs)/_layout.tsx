@@ -2,9 +2,9 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs, router } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
-import { useAuth } from "../_shared/_contexts";
-import { strings } from "../_shared/strings";
-import { colors } from "../_shared/theme";
+import { useAuth } from "../../_shared/_contexts";
+import { strings } from "../../_shared/strings";
+import { colors } from "../../_shared/theme";
 
 export default function TabsLayout() {
   const { user, loading } = useAuth();

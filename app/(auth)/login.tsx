@@ -11,16 +11,16 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import { useAuth } from "../_shared/_contexts";
-import type { LoginCredentials } from "../_shared/_types";
-import { strings } from "../_shared/strings";
+import { useAuth } from "../../_shared/_contexts";
+import type { LoginCredentials } from "../../_shared/_types";
+import { strings } from "../../_shared/strings";
 import {
     borderRadius,
     colors,
     fontSize,
     fontWeight,
     spacing,
-} from "../_shared/theme";
+} from "../../_shared/theme";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");

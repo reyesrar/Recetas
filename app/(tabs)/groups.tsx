@@ -10,15 +10,15 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import { useAuth } from "../_shared/_contexts";
-import type { Group } from "../_shared/_types";
+import { useAuth } from "../../_shared/_contexts";
+import type { Group } from "../../_shared/_types";
 import {
     borderRadius,
     colors,
     fontSize,
     fontWeight,
     spacing,
-} from "../_shared/theme";
+} from "../../_shared/theme";
 import apiClient from "../services/api";
 
 export default function GroupsScreen() {
