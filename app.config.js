@@ -10,21 +10,24 @@ export default {
     splash: {
       image: "./assets/images/splash-icon.png",
       resizeMode: "contain",
-      backgroundColor: "#ffffff"
+      backgroundColor: "#ffffff",
     },
     android: {
       adaptiveIcon: {
         foregroundImage: "./assets/images/android-icon-foreground.png",
-        backgroundColor: "#ffffff"
+        backgroundColor: "#ffffff",
       },
-      package: "com.recetas.app"
+      package: "com.recetas.app",
     },
     plugins: ["expo-router"],
     experiments: {
-      typedRoutes: true
+      typedRoutes: true,
     },
     extra: {
-      apiUrl: process.env.API_URL || "http://10.0.2.2:5000/api"
-    }
-  }
+      apiUrl: process.env.API_URL || "http://10.0.2.2:5000/api",
+      eas: {
+        projectId: "ec9fb48c-9404-42c7-8956-75ac7f006756",
+      },
+    },
+  },
 };
